@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 @Service
 public class UrlService {
     @Autowired
@@ -24,18 +26,18 @@ public class UrlService {
 
     public String getOriginalUrl(String shortCode) {
         String originalUrl = redisTemplate.opsForValue().get(shortCode);
-        if(originalUrl!=null) {
-            Url url = urlRepository.findByShortCode(shortCode)
-                    .orElseThrow(() -> new ResourceNotFoundException("URL not found"));
-            url.setClickCount(url.getClickCount() + 1);
-            urlRepository.save(url);
-            return originalUrl;
-        }
+
         Url url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new ResourceNotFoundException("URL not found"));
+
         url.setClickCount(url.getClickCount() + 1);
-        redisTemplate.opsForValue().set(shortCode , url.getOriginalUrl());
         urlRepository.save(url);
+
+        if (originalUrl != null) {
+            return originalUrl;
+        }
+
+        redisTemplate.opsForValue().set(shortCode, url.getOriginalUrl(), 10, TimeUnit.MINUTES);
         return url.getOriginalUrl();
     }
     public int getClickCount(String shortCode) {
