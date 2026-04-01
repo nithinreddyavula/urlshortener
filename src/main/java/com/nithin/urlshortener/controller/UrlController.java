@@ -27,6 +27,10 @@ public class UrlController {
         headers.setLocation(URI.create(originalUrl));
         return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
+    @GetMapping ("/stats/{shortCode}")
+    public ResponseEntity<Integer> getClickCount(@PathVariable String shortCode) {
+        return ResponseEntity.ok(urlService.getClickCount(shortCode));
 
+    }
 
 }

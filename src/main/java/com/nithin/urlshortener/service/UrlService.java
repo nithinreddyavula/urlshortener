@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 @Service
 public class UrlService {
@@ -24,12 +25,22 @@ public class UrlService {
     public String getOriginalUrl(String shortCode) {
         String originalUrl = redisTemplate.opsForValue().get(shortCode);
         if(originalUrl!=null) {
+            Url url = urlRepository.findByShortCode(shortCode)
+                    .orElseThrow(() -> new ResourceNotFoundException("URL not found"));
+            url.setClickCount(url.getClickCount() + 1);
+            urlRepository.save(url);
             return originalUrl;
         }
         Url url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new ResourceNotFoundException("URL not found"));
+        url.setClickCount(url.getClickCount() + 1);
         redisTemplate.opsForValue().set(shortCode , url.getOriginalUrl());
+        urlRepository.save(url);
         return url.getOriginalUrl();
     }
-
+    public int getClickCount(String shortCode) {
+        Url url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new ResourceNotFoundException("URL not found"));
+        return url.getClickCount();
+    }
 }
